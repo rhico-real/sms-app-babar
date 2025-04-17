@@ -4,7 +4,7 @@ part 'auth_params.g.dart';
 
 @Freezed()
 class LoginParams with _$LoginParams {
-  const factory LoginParams({required String email, required String password}) = _LoginParams;
+  const factory LoginParams({required String identifier, required String password}) = _LoginParams;
 
   factory LoginParams.fromJson(Map<String, dynamic> json) => _$LoginParamsFromJson(json);
 }

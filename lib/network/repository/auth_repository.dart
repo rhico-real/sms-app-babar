@@ -10,7 +10,7 @@ class AuthRepository {
   //                         POST: LOGIN
   // =================================================================
   Future<DataState> login({required LoginParams loginParams}) async {
-    final payload = {'email': loginParams.email, 'password': loginParams.password};
+    final payload = {'identifier': loginParams.identifier, 'password': loginParams.password};
 
     DataState? data = await RepositoryHelper().post(payload: payload, endpoint: 'auth/login', fromJson: (json) => LoginModel.fromJson(json));
     return data;

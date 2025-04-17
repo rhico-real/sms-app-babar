@@ -3,9 +3,11 @@ import 'package:sqflite/sqflite.dart' as sql;
 import 'package:path/path.dart' as path;
 import 'package:sqflite/sqflite.dart';
 
+@pragma('vm:entry-point')
 class SqliteDB {
   static int databaseVersion = 1;
 
+  @pragma('vm:entry-point')
   static Future<sql.Database> database() async {
     final dbPath = await sql.getDatabasesPath();
     return sql.openDatabase(path.join(dbPath, 'ybo_approval.db'), version: databaseVersion, onCreate: (db, version) {
@@ -21,6 +23,9 @@ class SqliteDB {
   static void _createTables(Batch batch) {
     // Sample table only
     batch.execute('CREATE TABLE IF NOT EXISTS user_accounts (id INTEGER PRIMARY KEY AUTOINCREMENT, email TEXT, password TEXT)');
+    
+    // Create SMS messages table
+    batch.execute('CREATE TABLE IF NOT EXISTS sms_messages (id INTEGER PRIMARY KEY AUTOINCREMENT, sender TEXT, content TEXT, status TEXT, timestamp TEXT, isRead INTEGER)');
     batch.commit();
   }
 

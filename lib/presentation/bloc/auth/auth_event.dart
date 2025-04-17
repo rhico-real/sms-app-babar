@@ -10,13 +10,12 @@ abstract class AuthEvent extends Equatable {
 class GetStoredAuthEvent extends AuthEvent {}
 
 class LoginEvent extends AuthEvent {
-  final String? email;
-  final String? password;
+  final LoginParams? loginParams;
 
-  const LoginEvent({this.email, this.password});
+  const LoginEvent({this.loginParams});
 
   @override
-  List<Object> get props => [email ?? '', password ?? ''];
+  List<Object> get props => [];
 }
 
 class LogoutEvent extends AuthEvent {

@@ -21,7 +21,7 @@ LoginParams _$LoginParamsFromJson(Map<String, dynamic> json) {
 
 /// @nodoc
 mixin _$LoginParams {
-  String get email => throw _privateConstructorUsedError;
+  String get identifier => throw _privateConstructorUsedError;
   String get password => throw _privateConstructorUsedError;
 
   /// Serializes this LoginParams to a JSON map.
@@ -41,7 +41,7 @@ abstract class $LoginParamsCopyWith<$Res> {
     $Res Function(LoginParams) then,
   ) = _$LoginParamsCopyWithImpl<$Res, LoginParams>;
   @useResult
-  $Res call({String email, String password});
+  $Res call({String identifier, String password});
 }
 
 /// @nodoc
@@ -58,13 +58,13 @@ class _$LoginParamsCopyWithImpl<$Res, $Val extends LoginParams>
   /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
   @override
-  $Res call({Object? email = null, Object? password = null}) {
+  $Res call({Object? identifier = null, Object? password = null}) {
     return _then(
       _value.copyWith(
-            email:
-                null == email
-                    ? _value.email
-                    : email // ignore: cast_nullable_to_non_nullable
+            identifier:
+                null == identifier
+                    ? _value.identifier
+                    : identifier // ignore: cast_nullable_to_non_nullable
                         as String,
             password:
                 null == password
@@ -86,7 +86,7 @@ abstract class _$$LoginParamsImplCopyWith<$Res>
   ) = __$$LoginParamsImplCopyWithImpl<$Res>;
   @override
   @useResult
-  $Res call({String email, String password});
+  $Res call({String identifier, String password});
 }
 
 /// @nodoc
@@ -102,13 +102,13 @@ class __$$LoginParamsImplCopyWithImpl<$Res>
   /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
   @override
-  $Res call({Object? email = null, Object? password = null}) {
+  $Res call({Object? identifier = null, Object? password = null}) {
     return _then(
       _$LoginParamsImpl(
-        email:
-            null == email
-                ? _value.email
-                : email // ignore: cast_nullable_to_non_nullable
+        identifier:
+            null == identifier
+                ? _value.identifier
+                : identifier // ignore: cast_nullable_to_non_nullable
                     as String,
         password:
             null == password
@@ -123,19 +123,19 @@ class __$$LoginParamsImplCopyWithImpl<$Res>
 /// @nodoc
 @JsonSerializable()
 class _$LoginParamsImpl implements _LoginParams {
-  const _$LoginParamsImpl({required this.email, required this.password});
+  const _$LoginParamsImpl({required this.identifier, required this.password});
 
   factory _$LoginParamsImpl.fromJson(Map<String, dynamic> json) =>
       _$$LoginParamsImplFromJson(json);
 
   @override
-  final String email;
+  final String identifier;
   @override
   final String password;
 
   @override
   String toString() {
-    return 'LoginParams(email: $email, password: $password)';
+    return 'LoginParams(identifier: $identifier, password: $password)';
   }
 
   @override
@@ -143,14 +143,15 @@ class _$LoginParamsImpl implements _LoginParams {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
             other is _$LoginParamsImpl &&
-            (identical(other.email, email) || other.email == email) &&
+            (identical(other.identifier, identifier) ||
+                other.identifier == identifier) &&
             (identical(other.password, password) ||
                 other.password == password));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  int get hashCode => Object.hash(runtimeType, email, password);
+  int get hashCode => Object.hash(runtimeType, identifier, password);
 
   /// Create a copy of LoginParams
   /// with the given fields replaced by the non-null parameter values.
@@ -168,7 +169,7 @@ class _$LoginParamsImpl implements _LoginParams {
 
 abstract class _LoginParams implements LoginParams {
   const factory _LoginParams({
-    required final String email,
+    required final String identifier,
     required final String password,
   }) = _$LoginParamsImpl;
 
@@ -176,7 +177,7 @@ abstract class _LoginParams implements LoginParams {
       _$LoginParamsImpl.fromJson;
 
   @override
-  String get email;
+  String get identifier;
   @override
   String get password;
 
