@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:sms_app/core/asset_helper.dart';
+import 'package:sms_app/core/call_bloc_helper.dart';
+import 'package:sms_app/network/params/auth/auth_params.dart';
+import 'package:sms_app/presentation/bloc/auth/auth_bloc.dart';
 import 'package:sms_app/presentation/views/dashboard_screen.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -10,15 +14,16 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  TextEditingController _emailController = TextEditingController();
-  TextEditingController _passwordController = TextEditingController();
+  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
 
   bool _passwordVisible = false;
-  
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      resizeToAvoidBottomInset: false, // Prevents overflow when keyboard appears
+      resizeToAvoidBottomInset:
+          false, // Prevents overflow when keyboard appears
       body: Column(
         children: [
           Stack(
@@ -32,23 +37,42 @@ class _LoginScreenState extends State<LoginScreen> {
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
-                        Image.asset(AssetHelper.logo, scale: 5,),
-                          Text("SMS App", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18),)
+                        Image.asset(AssetHelper.logo, scale: 5),
+                        Text(
+                          "SMS App",
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 18,
+                          ),
+                        ),
                       ],
                     ),
-                    SizedBox(height: 40,),
+                    SizedBox(height: 40),
                     SizedBox(
                       width: MediaQuery.of(context).size.width * 0.7,
-                      child: Text("Sign in to your Account", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 30),))
+                      child: Text(
+                        "Sign in to your Account",
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 30,
+                        ),
+                      ),
+                    ),
                   ],
                 ),
-              )
+              ),
             ],
           ),
           Expanded(
-            child: SingleChildScrollView( // Wrap in SingleChildScrollView to handle overflow
+            child: SingleChildScrollView(
+              // Wrap in SingleChildScrollView to handle overflow
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 10.0),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20.0,
+                  vertical: 10.0,
+                ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -66,9 +90,12 @@ class _LoginScreenState extends State<LoginScreen> {
                       child: TextField(
                         decoration: InputDecoration(
                           border: InputBorder.none,
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 15, vertical: 12),
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 15,
+                            vertical: 12,
+                          ),
                           hintText: 'Enter email or phone number',
-                          hintStyle: TextStyle(color: Colors.grey[500])
+                          hintStyle: TextStyle(color: Colors.grey[500]),
                         ),
                         controller: _emailController,
                       ),
@@ -89,12 +116,17 @@ class _LoginScreenState extends State<LoginScreen> {
                         obscureText: !_passwordVisible,
                         decoration: InputDecoration(
                           border: InputBorder.none,
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 15, vertical: 12),
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 15,
+                            vertical: 12,
+                          ),
                           hintText: 'Enter password',
                           hintStyle: TextStyle(color: Colors.grey[500]),
                           suffixIcon: IconButton(
                             icon: Icon(
-                              _passwordVisible ? Icons.visibility : Icons.visibility_off,
+                              _passwordVisible
+                                  ? Icons.visibility
+                                  : Icons.visibility_off,
                               color: Colors.grey,
                             ),
                             onPressed: () {
@@ -128,46 +160,81 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                     ),
                     const SizedBox(height: 10),
-                    SizedBox(
-                      width: double.infinity,
-                      height: 50,
-                      child: ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.blue,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                        ),
-                        onPressed: () {
-                          Navigator.pushReplacement(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const DashboardScreen(),
+                    BlocConsumer<AuthBloc, AuthState>(
+                      listener: (context,state){
+                        if(state is ErrorLoginState){
+                          const snackBar = SnackBar(content: Text('Login Failed.'), backgroundColor: Colors.red,);
+                          ScaffoldMessenger.of(context).showSnackBar(snackBar);
+                        }
+                      },
+                      builder: (context, state) {
+                        if(state is LoadingAuthState){
+                          return Center(child: CircularProgressIndicator(color: Colors.blue,));
+                        }
+
+                        return SizedBox(
+                          width: double.infinity,
+                          height: 50,
+                          child: ElevatedButton(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.blue,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
                             ),
-                          );
-                        },
-                        child: Text(
-                          'Log In',
-                          style: TextStyle(color: Colors.white, fontSize: 16),
-                        ),
-                      ),
+                            onPressed: () {
+                              LoginParams loginParams = LoginParams(
+                                identifier: _emailController.text,
+                                password: _passwordController.text,
+                              );
+                              authBloc.add(
+                                LoginEvent(loginParams: loginParams),
+                              );
+                              // Navigator.pushReplacement(
+                              //   context,
+                              //   MaterialPageRoute(
+                              //     builder: (context) => const DashboardScreen(),
+                              //   ),
+                              // );
+                            },
+                            child: Text(
+                              'Log In',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 16,
+                              ),
+                            ),
+                          ),
+                        );
+                      },
                     ),
-                    SizedBox(height: MediaQuery.of(context).size.height * 0.12), // Flexible spacing
+                    SizedBox(
+                      height: MediaQuery.of(context).size.height * 0.12,
+                    ), // Flexible spacing
                     Center(
                       child: RichText(
                         textAlign: TextAlign.center,
                         text: TextSpan(
-                          style: TextStyle(color: Colors.grey.shade700, fontSize: 12),
+                          style: TextStyle(
+                            color: Colors.grey.shade700,
+                            fontSize: 12,
+                          ),
                           children: [
                             TextSpan(text: 'By signing up, you agree to the '),
                             TextSpan(
                               text: 'Terms of Service',
-                              style: TextStyle(fontWeight: FontWeight.bold, color: Colors.blue),
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: Colors.blue,
+                              ),
                             ),
                             TextSpan(text: ' and '),
                             TextSpan(
                               text: 'Data Processing Agreement',
-                              style: TextStyle(fontWeight: FontWeight.bold, color: Colors.blue),
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: Colors.blue,
+                              ),
                             ),
                           ],
                         ),

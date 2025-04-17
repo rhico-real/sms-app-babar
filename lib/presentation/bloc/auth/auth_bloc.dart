@@ -38,9 +38,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
 
   Future<void> _login(Emitter<AuthState> emit, LoginParams? loginParams)async {
     emit(const LoadingAuthState());
-    emit(const AuthenticatedState());
 
-    // Sample use of API
     if (loginParams != null) {
       DataState data = await AuthRepository().login(loginParams: loginParams);
 
@@ -48,27 +46,14 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         LoginModel loginModel = data.data;
         Logger().e(loginModel.toJson());
 
-        // Sample use of API
         if (loginModel.user?.tokens?.access != null && loginModel.user!.tokens!.access!.isNotEmpty) {
           SharedPrefsUtil().storeString(SharedPrefsHelper.token, loginModel.user!.tokens!.access!);
-
-          //insert user account
-          // Map<String, dynamic> userAccount = {'email': loginParams.email, 'password': loginParams.password};
-          // int accountId = await UserAccountDBHelper.insert(userAccount);
-
-          // //insert user information
-          // Map<String, dynamic> userInfo = {
-          //   'id': accountId,
-          //   'first_name': loginModel.jwt?.user?.firstName,
-          //   'last_name': loginModel.jwt?.user?.firstName,
-          //   'logo': loginModel.jwt?.user?.avatarUrl,
-          //   'name': loginModel.jwt?.user?.getDisplayName,
-          // };
-          // await UserInfoDBHelper.insert(userInfo);
         }
 
         emit(AuthenticatedState());
       } else {
+        Logger().e(data);
+        emit(ErrorLoginState());
         emit(UnauthenticatedState());
       }
     } else {

@@ -1,4 +1,4 @@
-package com.example.sms_app.service
+package com.basroot.sms.app.service
 
 import android.app.NotificationChannel
 import android.app.NotificationManager
@@ -10,7 +10,7 @@ import android.os.Build
 import android.os.IBinder
 import android.util.Log
 import androidx.core.app.NotificationCompat
-import com.example.sms_app.MainActivity
+import com.basroot.sms.app.MainActivity
 
 /**
  * A foreground service to keep the SMS listener running even when the app is in background

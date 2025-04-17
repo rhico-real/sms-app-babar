@@ -21,6 +21,10 @@ class AuthenticatedState extends AuthState {
   const AuthenticatedState();
 }
 
+class ErrorLoginState extends AuthState {
+  const ErrorLoginState();
+}
+
 class UnauthenticatedState extends AuthState {
   const UnauthenticatedState();
 }

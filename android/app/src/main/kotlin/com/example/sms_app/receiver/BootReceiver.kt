@@ -1,11 +1,11 @@
-package com.example.sms_app.receiver
+package com.basroot.sms.app.receiver
 
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.os.Build
 import android.util.Log
-import com.example.sms_app.service.SmsListenerService
+import com.basroot.sms.app.service.SmsListenerService
 
 /**
  * A broadcast receiver that starts the SMS listener service when the device boots up

@@ -1,4 +1,4 @@
-package com.example.sms_app
+package com.basroot.sms.app
 
 import android.content.Context
 import android.content.Intent
@@ -12,7 +12,7 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.util.Log
 import androidx.core.app.NotificationCompat
-import com.example.sms_app.service.SmsListenerService
+import com.basroot.sms.app.service.SmsListenerService
 import android.app.AlarmManager
 
 class MainActivity : FlutterActivity() {
