@@ -368,8 +368,9 @@ class _DashboardScreenState extends State<DashboardScreen>
                       margin: EdgeInsets.only(bottom: 20),
                       width: double.infinity,
                       child: ElevatedButton(
-                        onPressed: () {
-                          
+                        onPressed: () async {
+                          await PendingMessageProcessor().processMessage(message);
+                          Navigator.pop(dialogContext);
                         },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.white,

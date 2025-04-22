@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:intl/intl.dart';
 import 'package:sms_app/core/background_bloc_helper.dart';
+import 'package:sms_app/core/date_parser_helper.dart';
 import 'package:sms_app/local_db/sms_db_helper.dart';
 import 'package:sms_app/network/models/sms_message.dart';
 import 'package:sms_app/network/params/appointment/appointment_params.dart';
@@ -34,22 +35,15 @@ class SmsService {
     _smsBloc = bloc;
   }
   
+  @pragma('vm:entry-point')
   DateTime? _parseCustomDate(String raw) {
-  final match = RegExp(r'^([A-Za-z]+)(\d{1,2})(\d{4})$').firstMatch(raw);
-  if (match != null) {
-    final month = match.group(1)!;
-    final day = match.group(2)!;
-    final year = match.group(3)!;
-    final spaced = '$month $day $year';
-
-    for (final format in ['MMMM d yyyy', 'MMM d yyyy']) {
-      try {
-        return DateFormat(format).parseStrict(spaced);
-      } catch (_) {}
+    if (kDebugMode) {
+      print('SmsService attempting to parse date: $raw');
     }
+    
+    // Use the new date parser helper that handles multiple formats
+    return DateParserHelper.parseDate(raw);
   }
-  return null;
-}
 
   @pragma('vm:entry-point')
   Future<void> processIncomingSms(String sender, String content) async {
@@ -80,8 +74,18 @@ class SmsService {
 
       // Now try to process it
       if (parts.length >= 3 && parts[0].toLowerCase() == 'appointment') {
-        final dateRegex = RegExp(r'^[A-Za-z]+[0-9]{1,2}[0-9]{4}$');
+        // Match both text and numeric date formats
+        final dateRegex = RegExp(
+          r'^([A-Za-z]+[0-9]{1,2}[0-9]{4}$)|' +  // April22025, apr22025
+          r'^([0-9]{2}[0-9]{2}[0-9]{4}$)|' +     // 04022025
+          r'^([0-9]{1,2}/[0-9]{1,2}/[0-9]{4}$)'  // 04/02/2025
+        );
+        
         int dateIndex = parts.indexWhere((part) => dateRegex.hasMatch(part));
+        
+        if (kDebugMode) {
+          print('Date pattern search result: dateIndex = $dateIndex, part: ${dateIndex >= 0 ? parts[dateIndex] : "not found"}');
+        }
 
         if (dateIndex > 1) {
           final rawFullName = parts.sublist(1, dateIndex).join('');
