@@ -10,7 +10,7 @@ class SqliteDB {
   @pragma('vm:entry-point')
   static Future<sql.Database> database() async {
     final dbPath = await sql.getDatabasesPath();
-    return sql.openDatabase(path.join(dbPath, 'ybo_approval.db'), version: databaseVersion, onCreate: (db, version) {
+    return sql.openDatabase(path.join(dbPath, 'database_sqlite.db'), version: databaseVersion, onCreate: (db, version) {
       var batch = db.batch();
       _createTables(batch);
     }, onUpgrade: (db, int oldVersion, int newVersion) async {

@@ -41,3 +41,14 @@ class ReceiveNewMessage extends SmsEvent {
   @override
   List<Object> get props => [sender, content];
 }
+
+class ErrorCodeFormatMessage extends SmsEvent {
+  final String message;
+
+  const ErrorCodeFormatMessage(this.message);
+
+  @override
+  List<Object> get props => [message];
+}
+
+class ProcessPendingMessages extends SmsEvent {}

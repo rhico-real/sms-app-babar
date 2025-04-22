@@ -151,7 +151,7 @@ class NotificationService {
         enableLights: false,
         enableVibration: false,
         // Use the app icon - most reliable approach
-        icon: 'mipmap/ic_launcher',
+        icon: 'mipmap/launcher_icon',
         category: AndroidNotificationCategory.service,
         visibility: NotificationVisibility.public,
         color: const Color.fromARGB(255, 33, 150, 243), // Blue color

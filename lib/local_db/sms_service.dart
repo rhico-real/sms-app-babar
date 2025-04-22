@@ -1,6 +1,10 @@
 import 'package:flutter/foundation.dart';
-import 'package:sms_app/local_db/db_helper.dart';
+import 'package:intl/intl.dart';
+import 'package:sms_app/core/background_bloc_helper.dart';
+import 'package:sms_app/local_db/sms_db_helper.dart';
 import 'package:sms_app/network/models/sms_message.dart';
+import 'package:sms_app/network/params/appointment/appointment_params.dart';
+import 'package:sms_app/presentation/bloc/appointment/appointment_bloc.dart';
 import 'package:sms_app/presentation/bloc/sms/sms_bloc.dart';
 
 @pragma('vm:entry-point')
@@ -22,75 +26,6 @@ class SmsService {
     }
   }
 
-  // Save message to database
-  Future<int> saveMessage(SmsMessage message) async {
-    try {
-      final db = await SqliteDB.database();
-      final id = await db.insert('sms_messages', message.toMap());
-      return id;
-    } catch (e) {
-      if (kDebugMode) {
-        print('Error saving message: $e');
-      }
-      return -1;
-    }
-  }
-
-  // Get all messages
-  Future<List<SmsMessage>> getAllMessages() async {
-    try {
-      final db = await SqliteDB.database();
-      final List<Map<String, dynamic>> maps = await db.query(
-        'sms_messages',
-        orderBy: 'timestamp DESC',
-      );
-
-      return List.generate(maps.length, (i) {
-        return SmsMessage.fromMap(maps[i]);
-      });
-    } catch (e) {
-      if (kDebugMode) {
-        print('Error getting messages: $e');
-      }
-      return [];
-    }
-  }
-
-  // Mark message as read
-  Future<int> markAsRead(int id) async {
-    try {
-      final db = await SqliteDB.database();
-      return await db.update(
-        'sms_messages',
-        {'isRead': 1},
-        where: 'id = ?',
-        whereArgs: [id],
-      );
-    } catch (e) {
-      if (kDebugMode) {
-        print('Error marking message as read: $e');
-      }
-      return 0;
-    }
-  }
-
-  // Delete message
-  Future<int> deleteMessage(int id) async {
-    try {
-      final db = await SqliteDB.database();
-      return await db.delete(
-        'sms_messages',
-        where: 'id = ?',
-        whereArgs: [id],
-      );
-    } catch (e) {
-      if (kDebugMode) {
-        print('Error deleting message: $e');
-      }
-      return 0;
-    }
-  }
-
   // Holds a reference to the SMS bloc for updating UI when new messages arrive
   static SmsBloc? _smsBloc;
   
@@ -99,33 +34,151 @@ class SmsService {
     _smsBloc = bloc;
   }
   
-  // Process an incoming SMS
+  DateTime? _parseCustomDate(String raw) {
+  final match = RegExp(r'^([A-Za-z]+)(\d{1,2})(\d{4})$').firstMatch(raw);
+  if (match != null) {
+    final month = match.group(1)!;
+    final day = match.group(2)!;
+    final year = match.group(3)!;
+    final spaced = '$month $day $year';
+
+    for (final format in ['MMMM d yyyy', 'MMM d yyyy']) {
+      try {
+        return DateFormat(format).parseStrict(spaced);
+      } catch (_) {}
+    }
+  }
+  return null;
+}
+
   @pragma('vm:entry-point')
   Future<void> processIncomingSms(String sender, String content) async {
-    final message = SmsMessage(
-      sender: sender,
-      content: content,
-      status: 'Pending',
-      timestamp: DateTime.now(),
-    );
-    
-    final id = await saveMessage(message);
-    if (id > 0) {
+    try {
       if (kDebugMode) {
-        print('Message saved with id: $id');
-        print('Received new message from: $sender');
+        print("Processing SMS from $sender: $content");
       }
       
-      // Notify the SMS bloc if it's available
-      if (_smsBloc != null) {
-        try {
-          _smsBloc!.add(RefreshMessages());
-        } catch (e) {
-          if (kDebugMode) {
-            print('Error refreshing messages: $e');
+      final parts = content.split(' ');
+      
+      if (kDebugMode) {
+        print("Message parts length: ${parts.length}");
+      }
+
+      // First save the raw message regardless of format to ensure it's captured
+      final rawMessage = SmsMessage(
+        sender: sender,
+        content: content,
+        status: 'Pending',
+        timestamp: DateTime.now(),
+      );
+      
+      final rawId = await SmsDbHelper.saveMessage(rawMessage);
+      
+      if (kDebugMode) {
+        print("Raw message saved with ID: $rawId");
+      }
+
+      // Now try to process it
+      if (parts.length >= 3 && parts[0].toLowerCase() == 'appointment') {
+        final dateRegex = RegExp(r'^[A-Za-z]+[0-9]{1,2}[0-9]{4}$');
+        int dateIndex = parts.indexWhere((part) => dateRegex.hasMatch(part));
+
+        if (dateIndex > 1) {
+          final rawFullName = parts.sublist(1, dateIndex).join('');
+          final fullName = rawFullName.replaceAllMapped(
+            RegExp(r'(?<!^)([A-Z])'),
+            (match) => ' ${match.group(1)}',
+          );
+          
+          final dateString = parts[dateIndex];
+          final parsedDate = _parseCustomDate(dateString);
+
+          if (parsedDate == null) {
+            if (kDebugMode) {
+              print('Error parsing date: $dateString');
+            }
+            // Using background-safe method
+            BackgroundBlocHelper.reportErrorFormat("Invalid date format for sender $sender.");
+            return;
           }
+
+          final formattedDate = DateFormat('yyyy-MM-dd').format(parsedDate);
+          final reason = parts.sublist(dateIndex + 1).join(' ');
+
+          final message = SmsMessage(
+            sender: sender,
+            content: content,
+            status: 'Pending',
+            timestamp: DateTime.now(),
+          );
+
+          // Update the existing message or create a new one
+          int id = rawId;
+          if (rawId <= 0) {
+            id = await SmsDbHelper.saveMessage(message);
+          }
+
+          if (id > 0) {
+            if (kDebugMode) {
+              print('Message processed successfully with id: $id');
+              print('Parsed Name: $fullName');
+              print('Parsed Date: $formattedDate');
+              print('Parsed Reason: $reason');
+            }
+
+            // Using background-safe methods
+            BackgroundBlocHelper.notifyNewMessage();
+
+            final appointmentParams = AppointmentParams(
+              fullName: fullName,
+              phoneNumber: sender,
+              date: formattedDate,
+              reason: reason,
+            );
+
+            BackgroundBlocHelper.bookAppointment(appointmentParams, id);
+            
+            // Also update the static instance if available
+            _smsBloc?.add(RefreshMessages());
+          }
+        } else {
+          if (kDebugMode) {
+            print('Date index error: dateIndex = $dateIndex');
+          }
+          BackgroundBlocHelper.reportErrorFormat("Invalid format for sender $sender.");
+        }
+      } else {
+        if (kDebugMode) {
+          print('Message format error: not an appointment message');
+        }
+        BackgroundBlocHelper.reportErrorFormat("Invalid format for sender $sender.");
+      }
+    } catch (e) {
+      // Catch any errors in the entire processing chain
+      if (kDebugMode) {
+        print('Error in SMS processing: $e');
+      }
+      
+      // Try to save a basic message at minimum to capture the SMS
+      try {
+        final fallbackMessage = SmsMessage(
+          sender: sender,
+          content: content,
+          status: 'Error',
+          timestamp: DateTime.now(),
+        );
+        await SmsDbHelper.saveMessage(fallbackMessage);
+        
+        // Try to notify UI if possible
+        _smsBloc?.add(RefreshMessages());
+        BackgroundBlocHelper.notifyNewMessage();
+        
+      } catch (innerError) {
+        if (kDebugMode) {
+          print('Critical error saving fallback message: $innerError');
         }
       }
     }
   }
+
 }

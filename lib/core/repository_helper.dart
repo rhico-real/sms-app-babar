@@ -13,6 +13,7 @@ class RepositoryHelper {
   Future<DataState> post<T>({required Map<String, dynamic> payload, required String endpoint, required T Function(Map<String, dynamic>) fromJson}) async {
     try {
       Logger().e(payload);
+      Logger().e('${NetworkConstants.baseUrl}/$endpoint/');
       final request = await Dio().post('${NetworkConstants.baseUrl}/$endpoint/', data: payload);
       if (request.statusCode == HttpStatus.ok || request.statusCode == HttpStatus.created) {
         final T data = fromJson(request.data);

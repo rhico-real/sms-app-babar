@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'dart:async';
 import 'package:sms_app/local_db/sms_service.dart';
 import 'package:another_telephony/telephony.dart';
+import 'package:sms_app/core/background_bloc_helper.dart';
 
 /// A service that listens for incoming SMS messages using the another_telephony package.
 @pragma('vm:entry-point')
@@ -24,17 +25,46 @@ class SmsListener {
   /// Background message handler for SMS
   @pragma('vm:entry-point')
   static Future<void> backgroundMessageHandler(SmsMessage message) async {
-    // This method is called when a message is received while the app is in the background
-    if (kDebugMode) {
-      print("Background message received: ${message.body}");
+    try {
+      // This method is called when a message is received while the app is in the background
+      if (kDebugMode) {
+        print("Background message received: ${message.body}");
+      }
+      
+      // Process the message in the background
+      final smsService = SmsService();
+      final sender = message.address ?? "Unknown";
+      final content = message.body ?? "No content";
+      
+      // Process the incoming SMS using our improved service
+      await smsService.processIncomingSms(sender, content);
+      
+      if (kDebugMode) {
+        print("Background message processed successfully");
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print("Error in background message handler: $e");
+      }
+      
+      // Try a fallback approach to at least save the message
+      try {
+        final sender = message.address ?? "Unknown";
+        final content = message.body ?? "No content";
+        
+        // Create a basic SMS service and attempt minimal processing
+        final fallbackService = SmsService();
+        await fallbackService.processIncomingSms(sender, content);
+        
+        if (kDebugMode) {
+          print("Fallback processing completed for background message");
+        }
+      } catch (innerError) {
+        if (kDebugMode) {
+          print("Critical error in background message handler: $innerError");
+        }
+      }
     }
-    
-    // Process the message in the background
-    final smsService = SmsService();
-    final sender = message.address ?? "Unknown";
-    final content = message.body ?? "No content";
-    
-    await smsService.processIncomingSms(sender, content);
   }
 
   /// Start listening for incoming SMS messages with both foreground and background support

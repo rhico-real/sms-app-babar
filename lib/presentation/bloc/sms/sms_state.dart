@@ -28,3 +28,12 @@ class SmsError extends SmsState {
   @override
   List<Object> get props => [message];
 }
+
+class SmsCodeFormatError extends SmsState {
+  final String message;
+
+  const SmsCodeFormatError(this.message);
+
+  @override
+  List<Object> get props => [message];
+}

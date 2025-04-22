@@ -58,7 +58,7 @@ class SmsListenerService : Service() {
         val notification = NotificationCompat.Builder(this, CHANNEL_ID)
             .setContentTitle("BABAR SMS Listener")
             .setContentText("Listening for appointment SMS messages")
-            .setSmallIcon(resources.getIdentifier("ic_launcher", "mipmap", packageName))
+            .setSmallIcon(resources.getIdentifier("launcher_icon", "mipmap", packageName))
             .setContentIntent(pendingIntent)
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setCategory(NotificationCompat.CATEGORY_SERVICE)

@@ -1,6 +1,8 @@
 import 'package:dio/dio.dart';
 import 'package:get_it/get_it.dart';
+import 'package:sms_app/presentation/bloc/appointment/appointment_bloc.dart';
 import 'package:sms_app/presentation/bloc/auth/auth_bloc.dart';
+import 'package:sms_app/presentation/bloc/sms/sms_bloc.dart';
 
 final injector = GetIt.instance;
 
@@ -19,5 +21,7 @@ class Injector {
 
     // Blocs
     injector.registerFactory<AuthBloc>(() => AuthBloc());
+    injector.registerFactory<SmsBloc>(() => SmsBloc());
+    injector.registerFactory<AppointmentBloc>(() => AppointmentBloc());
   }
 }

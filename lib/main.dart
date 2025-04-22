@@ -6,7 +6,10 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:sms_app/config/app_routes.dart';
 import 'package:sms_app/core/injector.dart';
 import 'package:sms_app/core/notification_service.dart';
+import 'package:sms_app/core/pending_message_processor.dart';
 import 'package:sms_app/local_db/sms_service.dart';
+import 'package:sms_app/core/background_bloc_helper.dart';
+import 'package:sms_app/presentation/bloc/appointment/appointment_bloc.dart';
 import 'package:sms_app/presentation/bloc/auth/auth_bloc.dart';
 import 'package:sms_app/presentation/bloc/sms/sms_bloc.dart';
 import 'package:sms_app/core/sms_listener.dart';
@@ -91,11 +94,35 @@ class MainApp extends StatefulWidget {
 
 class _MainAppState extends State<MainApp> with WidgetsBindingObserver {
   Key key = UniqueKey();
+  bool _hasProcessedPendingMessages = false;
   
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    
+    // Schedule processing of pending messages after UI is built
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _processPendingMessages();
+    });
+  }
+  
+  // Process any pending messages
+  Future<void> _processPendingMessages() async {
+    try {
+      if (!_hasProcessedPendingMessages) {
+        if (kDebugMode) {
+          print('Processing pending messages after app start');
+        }
+        await Future.delayed(const Duration(seconds: 2)); // Wait for blocs to fully initialize
+        await PendingMessageProcessor().processPendingMessages();
+        _hasProcessedPendingMessages = true;
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('Error processing pending messages: $e');
+      }
+    }
   }
   
   @override
@@ -109,8 +136,8 @@ class _MainAppState extends State<MainApp> with WidgetsBindingObserver {
     // Handle app lifecycle changes
     if (state == AppLifecycleState.resumed) {
       // App is in the foreground again
-      // No need to recreate the notification as it should be persistent
-      // This avoids duplicate notifications
+      // Process any pending messages that might have been received while app was in background
+      _processPendingMessages();
     } else if (state == AppLifecycleState.paused) {
       // App is minimized but still running
       // Ensure the notification is showing
@@ -130,7 +157,21 @@ class _MainAppState extends State<MainApp> with WidgetsBindingObserver {
           create: (_) => injector()..add(GetStoredAuthEvent()),
         ),
         BlocProvider<SmsBloc>(
-          create: (_) => SmsBloc()..add(LoadSmsMessages()),
+          create: (context) {
+            final bloc = SmsBloc()..add(LoadSmsMessages());
+            // Register with both services for background operations
+            SmsService.registerBloc(bloc);
+            BackgroundBlocHelper.registerSmsBloc(bloc);
+            return bloc;
+          },
+        ),
+        BlocProvider<AppointmentBloc>(
+          create: (context) {
+            final bloc = AppointmentBloc();
+            // Register for background operations
+            BackgroundBlocHelper.registerAppointmentBloc(bloc);
+            return bloc;
+          }
         ),
       ],
       child: MaterialApp(
