@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 import 'package:sms_app/core/background_bloc_helper.dart';
 import 'package:sms_app/core/date_parser_helper.dart';
 import 'package:sms_app/local_db/sms_db_helper.dart';
+import 'package:sms_app/main.dart';
 import 'package:sms_app/network/models/sms_message.dart';
 import 'package:sms_app/network/params/appointment/appointment_params.dart';
 import 'package:sms_app/presentation/bloc/appointment/appointment_bloc.dart';
@@ -58,19 +59,19 @@ class SmsService {
         print("Message parts length: ${parts.length}");
       }
 
-      // First save the raw message regardless of format to ensure it's captured
-      final rawMessage = SmsMessage(
-        sender: sender,
-        content: content,
-        status: 'Pending',
-        timestamp: DateTime.now(),
-      );
+      // // First save the raw message regardless of format to ensure it's captured
+      // final rawMessage = SmsMessage(
+      //   sender: sender,
+      //   content: content,
+      //   status: 'Pending',
+      //   timestamp: DateTime.now(),
+      // );
       
-      final rawId = await SmsDbHelper.saveMessage(rawMessage);
+      // final rawId = await SmsDbHelper.saveMessage(rawMessage);
       
-      if (kDebugMode) {
-        print("Raw message saved with ID: $rawId");
-      }
+      // if (kDebugMode) {
+      //   print("Raw message saved with ID: $rawId");
+      // }
 
       // Now try to process it
       if (parts.length >= 3 && parts[0].toLowerCase() == 'appointment') {
@@ -109,18 +110,31 @@ class SmsService {
           final formattedDate = DateFormat('yyyy-MM-dd').format(parsedDate);
           final reason = parts.sublist(dateIndex + 1).join(' ');
 
-          final message = SmsMessage(
+          // // Use the existing ID from the raw message
+          // int id = rawId;
+          
+          // // Mark as processing first to prevent duplicate processing
+          // bool canProcess = await SmsDbHelper.markMessageAsProcessing(id);
+          
+          // if (!canProcess) {
+          //   if (kDebugMode) {
+          //     print('Message ID $id is already being processed - skipping immediate processing');
+          //   }
+            
+          //   // Still update the UI to show the message
+          //   BackgroundBlocHelper.notifyNewMessage();
+          //   _smsBloc?.add(RefreshMessages());
+          //   return;
+          // }
+          
+          final rawMessage = SmsMessage(
             sender: sender,
             content: content,
             status: 'Pending',
             timestamp: DateTime.now(),
           );
-
-          // Update the existing message or create a new one
-          int id = rawId;
-          if (rawId <= 0) {
-            id = await SmsDbHelper.saveMessage(message);
-          }
+          
+          final id = await SmsDbHelper.saveMessage(rawMessage);
 
           if (id > 0) {
             if (kDebugMode) {
@@ -140,7 +154,15 @@ class SmsService {
               reason: reason,
             );
 
-            BackgroundBlocHelper.bookAppointment(appointmentParams, id);
+            // Process in the foreground if app is active, otherwise it will be handled when app reopens
+            if (MainApp.navigatorKey.currentContext != null) {
+              BackgroundBlocHelper.bookAppointment(appointmentParams, id);
+            } else {
+              // Just leave as Processing status to be handled when app reopens
+              if (kDebugMode) {
+                print('App context not available - message will be processed when app reopens');
+              }
+            }
             
             // Also update the static instance if available
             _smsBloc?.add(RefreshMessages());

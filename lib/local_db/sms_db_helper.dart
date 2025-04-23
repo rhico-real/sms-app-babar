@@ -96,6 +96,52 @@ class SmsDbHelper {
       return 0;
     }
   }
+  
+  // Mark message as processing (to prevent duplicate processing)
+  @pragma('vm:entry-point')
+  static Future<bool> markMessageAsProcessing(int id) async {
+    try {
+      final db = await SqliteDB.database();
+      
+      // First check if the message is already being processed or processed
+      final List<Map<String, dynamic>> checkResult = await db.query(
+        'sms_messages',
+        columns: ['status'],
+        where: 'id = ?',
+        whereArgs: [id],
+      );
+      
+      if (checkResult.isEmpty) {
+        return false;
+      }
+      
+      final currentStatus = checkResult.first['status'] as String;
+      
+      // Only allow processing if status is 'Pending' or 'Processing'
+      // Allow 'Processing' too so it can continue if app was closed during processing
+      if (currentStatus != 'Pending' && currentStatus != 'Processing') {
+        if (kDebugMode) {
+          print('Message $id has status: $currentStatus - skipping');
+        }
+        return false;
+      }
+      
+      // Update the status to "Processing"
+      final result = await db.update(
+        'sms_messages',
+        {'status': 'Processing'},
+        where: 'id = ?',
+        whereArgs: [id],
+      );
+      
+      return result > 0;
+    } catch (e) {
+      if (kDebugMode) {
+        print('Error marking message as processing: $e');
+      }
+      return false;
+    }
+  }
 
   // Delete message
   @pragma('vm:entry-point')

@@ -206,16 +206,14 @@ class _DashboardScreenState extends State<DashboardScreen>
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
-      // App has come to the foreground - process any pending messages
+      // App has come to the foreground - refresh the UI first
       if (mounted) {
         if (kDebugMode) {
-          print('App resumed - processing pending messages');
+          print('App resumed - refreshing message list');
         }
         
-        // Process any pending messages
-        context.read<SmsBloc>().add(ProcessPendingMessages());
-        
-        // Then refresh the UI
+        // Just refresh the UI - the pending message processing 
+        // will be handled by MainApp's lifecycle handler
         context.read<SmsBloc>().add(RefreshMessages());
       }
     }
@@ -369,7 +367,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                       width: double.infinity,
                       child: ElevatedButton(
                         onPressed: () async {
-                          await PendingMessageProcessor().processMessage(message);
+                          await PendingMessageProcessor().validateAndProcessMessage(message);
                           Navigator.pop(dialogContext);
                         },
                         style: ElevatedButton.styleFrom(
@@ -711,11 +709,23 @@ class _DashboardScreenState extends State<DashboardScreen>
                             print('Processing pending messages from pull-to-refresh');
                           }
                           
-                          // Use the bloc event to process pending messages
-                          context.read<SmsBloc>().add(ProcessPendingMessages());
+                          // Check if there are any Pending or Processing messages
+                          final messages = (context.read<SmsBloc>().state as SmsLoaded).messages;
+                          final hasPendingMessages = messages.any(
+                            (msg) => msg.status == 'Pending' || msg.status == 'Processing'
+                          );
                           
-                          // Wait a moment for processing to complete
-                          await Future.delayed(const Duration(milliseconds: 300));
+                          if (hasPendingMessages) {
+                            // Use the bloc event to process pending messages
+                            context.read<SmsBloc>().add(ProcessPendingMessages());
+                            
+                            // Wait a moment for processing to complete
+                            await Future.delayed(const Duration(milliseconds: 800));
+                          } else {
+                            if (kDebugMode) {
+                              print('No pending or processing messages to process');
+                            }
+                          }
                           
                           // Then refresh the message list
                           context.read<SmsBloc>().add(RefreshMessages());

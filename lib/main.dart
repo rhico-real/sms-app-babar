@@ -7,6 +7,7 @@ import 'package:sms_app/config/app_routes.dart';
 import 'package:sms_app/core/injector.dart';
 import 'package:sms_app/core/notification_service.dart';
 import 'package:sms_app/core/pending_message_processor.dart';
+import 'package:sms_app/local_db/sms_db_helper.dart';
 import 'package:sms_app/local_db/sms_service.dart';
 import 'package:sms_app/core/background_bloc_helper.dart';
 import 'package:sms_app/presentation/bloc/appointment/appointment_bloc.dart';
@@ -94,7 +95,6 @@ class MainApp extends StatefulWidget {
 
 class _MainAppState extends State<MainApp> with WidgetsBindingObserver {
   Key key = UniqueKey();
-  bool _hasProcessedPendingMessages = false;
   
   @override
   void initState() {
@@ -107,16 +107,39 @@ class _MainAppState extends State<MainApp> with WidgetsBindingObserver {
     });
   }
   
+  // Flag to track if we've processed messages in this session
+  static bool _pendingMessagesProcessed = false;
+  
   // Process any pending messages
   Future<void> _processPendingMessages() async {
     try {
-      if (!_hasProcessedPendingMessages) {
+      // Check if there are any messages to process
+      final messages = await SmsDbHelper.getAllMessages();
+      final hasPendingOrProcessing = messages.any(
+          (msg) => msg.status == 'Pending' || msg.status == 'Processing');
+      
+      // Always process if there are pending messages, regardless of the flag
+      if (hasPendingOrProcessing) {
         if (kDebugMode) {
-          print('Processing pending messages after app start');
+          print('Found pending/processing messages - processing now');
         }
         await Future.delayed(const Duration(seconds: 2)); // Wait for blocs to fully initialize
         await PendingMessageProcessor().processPendingMessages();
-        _hasProcessedPendingMessages = true;
+        _pendingMessagesProcessed = true;
+        
+        if (kDebugMode) {
+          print('Pending message processing complete');
+        }
+      } else if (!_pendingMessagesProcessed) {
+        // Just check once per session if no pending messages
+        if (kDebugMode) {
+          print('No pending messages to process');
+        }
+        _pendingMessagesProcessed = true;
+      } else {
+        if (kDebugMode) {
+          print('Already checked for pending messages this session');
+        }
       }
     } catch (e) {
       if (kDebugMode) {
@@ -144,6 +167,12 @@ class _MainAppState extends State<MainApp> with WidgetsBindingObserver {
       NotificationService().showListeningNotification();
     } else if (state == AppLifecycleState.detached) {
       // App is completely closed/terminated
+      // Reset the processing flag so messages will be processed when app restarts
+      _pendingMessagesProcessed = false;
+      if (kDebugMode) {
+        print('App detached - reset message processing flag');
+      }
+      
       // We'll leave the notification running in this case since we want
       // the service to keep running even when the app is minimized
     }

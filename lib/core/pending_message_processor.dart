@@ -19,9 +19,11 @@ class PendingMessageProcessor {
         print('Checking for pending messages to process...');
       }
       
-      // Get all messages with "Pending" status
+      // Get all messages with "Pending" or "Processing" status
       final messages = await SmsDbHelper.getAllMessages();
-      final pendingMessages = messages.where((msg) => msg.status == 'Pending').toList();
+      final pendingMessages = messages.where(
+        (msg) => msg.status == 'Pending' || msg.status == 'Processing'
+      ).toList();
       
       if (pendingMessages.isEmpty) {
         if (kDebugMode) {
@@ -60,14 +62,49 @@ class PendingMessageProcessor {
   
   Future<void> processMessage(SmsMessage message) async {
     try {
+      if (message.id == null) {
+        if (kDebugMode) {
+          print('Message ID is null, cannot process');
+        }
+        return;
+      }
+      
+      // Try to mark the message as processing - if this returns false,
+      // it means the message is already being processed or is not in Pending state
+      bool canProcess = await SmsDbHelper.markMessageAsProcessing(message.id!);
+      
+      if (!canProcess) {
+        if (kDebugMode) {
+          print('Message ID ${message.id} is already processed or being processed - skipping');
+        }
+        return;
+      }
+      
       if (kDebugMode) {
         print('Processing pending message ID: ${message.id}, content: ${message.content}');
       }
       
-      final content = message.content;
-      final parts = content.split(' ');
       
-      if (parts.length >= 3 && parts[0].toLowerCase() == 'appointment') {
+      await validateAndProcessMessage(message);
+      
+    } catch (e) {
+      if (kDebugMode) {
+        print('Error processing pending message: $e');
+      }
+      try {
+        await SmsDbHelper.updateMessageStatus(message.id!, "Failed");
+      } catch (updateError) {
+        if (kDebugMode) {
+          print('Error updating message status: $updateError');
+        }
+      }
+    }
+  }
+
+  Future<void> validateAndProcessMessage(SmsMessage message) async {
+    final content = message.content;
+      final parts = content.split(' ');
+    if (parts.length >= 3 && parts[0].toLowerCase() == 'appointment') {
         // Match both text and numeric date formats
         final dateRegex = RegExp(
           r'^([A-Za-z]+[0-9]{1,2}[0-9]{4}$)|' +  // April22025, apr22025
@@ -134,18 +171,5 @@ class PendingMessageProcessor {
         await SmsDbHelper.updateMessageStatus(message.id!, "Failed");
         BackgroundBlocHelper.reportErrorFormat("Invalid format for sender ${message.sender}.");
       }
-      
-    } catch (e) {
-      if (kDebugMode) {
-        print('Error processing pending message: $e');
-      }
-      try {
-        await SmsDbHelper.updateMessageStatus(message.id!, "Failed");
-      } catch (updateError) {
-        if (kDebugMode) {
-          print('Error updating message status: $updateError');
-        }
-      }
-    }
   }
 }
