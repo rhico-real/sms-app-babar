@@ -1,9 +1,9 @@
+import 'dart:async';
+
+import 'package:another_telephony/telephony.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
-import 'dart:async';
 import 'package:sms_app/local_db/sms_service.dart';
-import 'package:another_telephony/telephony.dart';
-import 'package:sms_app/core/background_bloc_helper.dart';
 
 /// A service that listens for incoming SMS messages using the another_telephony package.
 @pragma('vm:entry-point')

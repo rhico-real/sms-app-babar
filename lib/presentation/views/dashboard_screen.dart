@@ -2,10 +2,8 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:sms_app/core/asset_helper.dart';
-import 'package:sms_app/core/call_bloc_helper.dart';
 import 'package:sms_app/core/pending_message_processor.dart';
 import 'package:sms_app/network/models/sms_message.dart';
-import 'package:sms_app/network/params/appointment/appointment_params.dart';
 import 'package:sms_app/presentation/bloc/appointment/appointment_bloc.dart';
 import 'package:sms_app/presentation/bloc/sms/sms_bloc.dart';
 

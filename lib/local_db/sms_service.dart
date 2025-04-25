@@ -6,7 +6,6 @@ import 'package:sms_app/local_db/sms_db_helper.dart';
 import 'package:sms_app/main.dart';
 import 'package:sms_app/network/models/sms_message.dart';
 import 'package:sms_app/network/params/appointment/appointment_params.dart';
-import 'package:sms_app/presentation/bloc/appointment/appointment_bloc.dart';
 import 'package:sms_app/presentation/bloc/sms/sms_bloc.dart';
 
 @pragma('vm:entry-point')
